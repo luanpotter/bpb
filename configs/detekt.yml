@@ -1,0 +1,96 @@
+complexity:
+  LongMethod:
+    allowedLines: 30
+  LongParameterList:
+    allowedFunctionParameters: 5
+    allowedConstructorParameters: 6
+  CyclomaticComplexMethod:
+    allowedComplexity: 10
+  TooManyFunctions:
+    allowedFunctionsPerFile: 15
+    allowedFunctionsPerClass: 10
+    allowedFunctionsPerInterface: 5
+    allowedFunctionsPerObject: 10
+  LargeClass:
+    allowedLines: 200
+
+coroutines:
+  active: true
+
+comments:
+  active: true
+  UndocumentedPublicClass:
+    active: false
+  UndocumentedPublicFunction:
+    active: false
+  UndocumentedPublicProperty:
+    active: false
+
+empty-blocks:
+  active: true
+
+exceptions:
+  active: true
+  TooGenericExceptionCaught:
+    active: true
+  TooGenericExceptionThrown:
+    active: true
+  SwallowedException:
+    active: true
+
+naming:
+  active: true
+  FunctionNaming:
+    ignoreAnnotated:
+      - Test
+
+performance:
+  active: true
+
+potential-bugs:
+  active: true
+  CastToNullableType:
+    active: true
+  UnnecessaryNotNullCheck:
+    active: true
+
+style:
+  active: true
+  MagicNumber:
+    active: true
+    ignoreNumbers:
+      - "-1"
+      - "0"
+      - "1"
+      - "2"
+    ignoreHashCodeFunction: true
+    ignorePropertyDeclaration: true
+    ignoreConstantDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreAnnotation: true
+    ignoreEnums: true
+  MaxLineLength:
+    maxLineLength: 120
+  ReturnCount:
+    max: 3
+  ForbiddenComment:
+    active: true
+    comments:
+      - reason: "TODO comments should be resolved"
+        value: "TODO"
+      - reason: "FIXME comments should be resolved"
+        value: "FIXME"
+      - reason: "HACK comments indicate bad code"
+        value: "HACK"
+  UnusedImport:
+    active: true
+  UnusedParameter:
+    active: true
+  UnusedPrivateClass:
+    active: true
+  UnusedPrivateFunction:
+    active: true
+  UnusedPrivateProperty:
+    active: true
+  WildcardImport:
+    active: true

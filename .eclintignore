@@ -1,0 +1,7 @@
+gradlew
+gradle/
+build/
+.gradle/
+.kotlin/
+dictionary.txt
+.git/

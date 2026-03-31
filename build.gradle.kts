@@ -9,6 +9,11 @@ repositories { mavenCentral() }
 
 kotlin { jvmToolchain(21) }
 
+detekt {
+  config.setFrom(file("configs/detekt.yml"))
+  buildUponDefaultConfig = true
+}
+
 dependencies { testImplementation(kotlin("test")) }
 
 application { mainClass.set("xyz.luan.bpb.MainKt") }
