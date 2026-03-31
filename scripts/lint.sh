@@ -12,10 +12,10 @@ run() {
     fi
 }
 
-run "Compile check"       "gradle compileKotlin -q"
-run "Tests"               "gradle test -q"
-run "Detekt (static analysis)" "gradle detekt -q"
-run "Ktfmt (formatting)" "gradle ktfmtCheck -q"
+run "Compile check"       "./gradlew compileKotlin -q"
+run "Tests"               "./gradlew test -q"
+run "Detekt (static analysis)" "./gradlew detekt -q"
+run "Ktfmt (formatting)" "./gradlew ktfmtCheck -q"
 
 if [[ $failed -ne 0 ]]; then
     echo -e "\nSome checks failed."

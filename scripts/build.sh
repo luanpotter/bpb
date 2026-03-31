@@ -3,5 +3,5 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "==> Building..."
-gradle installDist
+./gradlew installDist
 echo "==> Done. Binary at build/install/bpb/bin/bpb"

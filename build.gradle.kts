@@ -1,18 +1,14 @@
 plugins {
-    kotlin("jvm") version "2.0.21"
-    application
-    id("io.gitlab.arturbosch.detekt") version "1.23.7"
-    id("com.ncorti.ktfmt.gradle") version "0.21.0"
+  kotlin("jvm") version "2.3.20"
+  application
+  id("dev.detekt") version "2.0.0-alpha.2"
+  id("com.ncorti.ktfmt.gradle") version "0.26.0"
 }
 
-repositories {
-    mavenCentral()
-}
+repositories { mavenCentral() }
 
-dependencies {
-    testImplementation(kotlin("test"))
-}
+kotlin { jvmToolchain(21) }
 
-application {
-    mainClass.set("xyz.luan.bpb.MainKt")
-}
+dependencies { testImplementation(kotlin("test")) }
+
+application { mainClass.set("xyz.luan.bpb.MainKt") }
