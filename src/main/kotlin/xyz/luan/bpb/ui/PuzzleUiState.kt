@@ -22,6 +22,10 @@ internal class PuzzleUiState(val grid: PuzzleGrid) {
   var candidateRow by mutableStateOf<Int?>(null)
     private set
 
+  /** Index of the highlighted candidate in the list. */
+  var candidateIdx by mutableIntStateOf(0)
+    private set
+
   fun moveCursor(dr: Int, dc: Int) {
     val newRow = (cursorRow + dr).coerceIn(grid.rows.indices)
     cursorRow = newRow
@@ -48,10 +52,34 @@ internal class PuzzleUiState(val grid: PuzzleGrid) {
   }
 
   fun toggleCandidates() {
-    candidateRow = if (candidateRow == cursorRow) null else cursorRow
+    if (candidateRow != null) {
+      candidateRow = null
+    } else {
+      candidateRow = cursorRow
+      candidateIdx = 0
+    }
   }
 
   fun dismissCandidates() {
+    candidateRow = null
+  }
+
+  fun moveCandidateCursor(delta: Int) {
+    val rowIdx = candidateRow ?: return
+    val count = grid.rows[rowIdx].candidates.size
+    if (count == 0) return
+    candidateIdx = (candidateIdx + delta).coerceIn(0, count - 1)
+  }
+
+  fun selectCandidate() {
+    val rowIdx = candidateRow ?: return
+    val row = grid.rows[rowIdx]
+    val candidate = row.candidates.getOrNull(candidateIdx) ?: return
+    for ((i, ch) in candidate.long.withIndex()) {
+      row.setCell(i, ch)
+    }
+    grid.refreshAll()
+    version++
     candidateRow = null
   }
 

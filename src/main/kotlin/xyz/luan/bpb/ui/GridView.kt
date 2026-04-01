@@ -1,61 +1,95 @@
 package xyz.luan.bpb.ui
 
 import androidx.compose.runtime.Composable
-import com.jakewharton.mosaic.modifier.Modifier
 import com.jakewharton.mosaic.ui.Color
 import com.jakewharton.mosaic.ui.Column
-import com.jakewharton.mosaic.ui.Row
 import com.jakewharton.mosaic.ui.Text
 import com.jakewharton.mosaic.ui.TextStyle
 import xyz.luan.bpb.puzzle.PuzzleRow
 
-/** Renders the puzzle grid with cursor highlighting and candidate counts. */
+private const val CELL_WIDTH = 3
+private const val ROW_NUM_WIDTH = 5
+private const val COUNT_SUFFIX_WIDTH = 10
+
+/** Computes the inner content width for the grid panel. */
+internal fun gridInnerWidth(maxLength: Int): Int =
+    ROW_NUM_WIDTH + maxLength * CELL_WIDTH + COUNT_SUFFIX_WIDTH
+
+/** Renders the bordered grid panel. */
 @Composable
-internal fun GridView(state: PuzzleUiState, modifier: Modifier = Modifier) {
+internal fun GridPanel(state: PuzzleUiState, innerWidth: Int, panelHeight: Int) {
   @Suppress("UNUSED_EXPRESSION") state.version
   val grid = state.grid
+  val totalWidth = innerWidth + BORDER_OVERHEAD
 
-  Column(modifier = modifier) {
+  Column {
+    BorderTop("Puzzle Grid", totalWidth)
     for ((rowIdx, puzzleRow) in grid.rows.withIndex()) {
-      val offset = grid.maxLength - puzzleRow.length
-      GridRow(puzzleRow, rowIdx, offset, state)
+      GridCellRow(puzzleRow, rowIdx, grid.maxLength, innerWidth, state)
+      GridClueRow(puzzleRow, grid.maxLength, innerWidth)
     }
+    val usedLines = grid.rows.size * 2 + 2
+    repeat(panelHeight - usedLines) { BLineEmpty(innerWidth) }
+    BLineEmpty(innerWidth)
+    GridAnswerRow(state, innerWidth)
+    BorderBottom(totalWidth)
   }
 }
 
 @Composable
-private fun GridRow(puzzleRow: PuzzleRow, rowIdx: Int, offset: Int, state: PuzzleUiState) {
-  val pad = " ".repeat(offset)
-  Row {
-    Text("  ${rowIdx + 1}. $pad", color = Color.White, textStyle = TextStyle.Dim)
-    for (colIdx in 0 until puzzleRow.length) {
-      val ch = puzzleRow.cells[colIdx]
-      val isSmall = puzzleRow.entry.pattern[colIdx].isLowerCase()
-      val isCursor = rowIdx == state.cursorRow && colIdx == state.cursorCol
-      CellView(ch, isSmall, isCursor)
+private fun GridCellRow(
+    row: PuzzleRow,
+    rowIdx: Int,
+    maxLength: Int,
+    innerWidth: Int,
+    state: PuzzleUiState,
+) {
+  BLine(innerWidth) {
+    val offset = maxLength - row.length
+    val pad = " ".repeat(offset * CELL_WIDTH)
+    Text(
+        "${(rowIdx + 1).toString().padStart(2)}. $pad",
+        color = Color.White,
+        textStyle = TextStyle.Dim,
+    )
+    for (colIdx in 0 until row.length) {
+      CellView(
+          row.cells[colIdx],
+          row.entry.pattern[colIdx].isLowerCase(),
+          rowIdx == state.cursorRow && colIdx == state.cursorCol,
+      )
     }
-    Text("  │ ${puzzleRow.candidates.size}", color = Color.White, textStyle = TextStyle.Dim)
-  }
-  Row {
-    val clueOffset = " ".repeat(offset + CLUE_INDENT)
-    Text("     $clueOffset${puzzleRow.entry.name}", color = Color.White, textStyle = TextStyle.Dim)
+    val countStr = row.candidates.size.toString().padStart(COUNT_SUFFIX_WIDTH - CELL_WIDTH)
+    Text(" │$countStr", color = Color.White, textStyle = TextStyle.Dim)
   }
 }
 
-/** Renders a single grid cell with cursor and small-word highlighting. */
+@Composable
+private fun GridClueRow(row: PuzzleRow, maxLength: Int, innerWidth: Int) {
+  val offset = maxLength - row.length
+  val prefix = " ".repeat(ROW_NUM_WIDTH + offset * CELL_WIDTH)
+  BLineText("$prefix${row.entry.name}", innerWidth, color = Color.White, textStyle = TextStyle.Dim)
+}
+
+@Composable
+private fun GridAnswerRow(state: PuzzleUiState, innerWidth: Int) {
+  BLine(innerWidth) {
+    Text("  Answer: ", color = Color.White)
+    Text(state.grid.getFinalAnswer(), color = Color.Magenta, textStyle = TextStyle.Bold)
+  }
+}
+
 @Composable
 private fun CellView(ch: Char?, isSmall: Boolean, isCursor: Boolean) {
   val letter = ch?.toString() ?: "_"
   val cellText = if (isSmall) "[$letter]" else " $letter "
-
   when {
     isCursor ->
         Text(cellText, color = Color.Black, background = Color.Cyan, textStyle = TextStyle.Bold)
     ch != null && isSmall -> Text(cellText, color = Color.Yellow, textStyle = TextStyle.Bold)
     ch != null -> Text(cellText, color = Color.Green)
-    isSmall -> Text(cellText, color = Color.White, textStyle = TextStyle.Dim)
     else -> Text(cellText, color = Color.White, textStyle = TextStyle.Dim)
   }
 }
 
-private const val CLUE_INDENT = 2
+private const val BORDER_OVERHEAD = 4

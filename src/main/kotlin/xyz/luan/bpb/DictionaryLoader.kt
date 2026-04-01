@@ -11,14 +11,11 @@ object DictionaryLoader {
   fun load(): List<String> {
     val cache = File(CACHE_FILE)
     if (cache.exists()) {
-      println("Loading dictionary from cache...")
       return parse(cache.readText())
     }
 
-    println("Downloading dictionary...")
     val text = URI(DICTIONARY_URL).toURL().readText()
     cache.writeText(text)
-    println("Cached to $CACHE_FILE")
     return parse(text)
   }
 
