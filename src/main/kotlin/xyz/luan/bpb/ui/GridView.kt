@@ -1,6 +1,7 @@
 package xyz.luan.bpb.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import com.jakewharton.mosaic.ui.Color
 import com.jakewharton.mosaic.ui.Column
 import com.jakewharton.mosaic.ui.Text
@@ -18,21 +19,22 @@ internal fun gridInnerWidth(maxLength: Int): Int =
 /** Renders the bordered grid panel. */
 @Composable
 internal fun GridPanel(state: PuzzleUiState, innerWidth: Int, panelHeight: Int) {
-  @Suppress("UNUSED_EXPRESSION") state.version
   val grid = state.grid
   val totalWidth = innerWidth + BORDER_OVERHEAD
 
-  Column {
-    BorderTop("Puzzle Grid", totalWidth)
-    for ((rowIdx, puzzleRow) in grid.rows.withIndex()) {
-      GridCellRow(puzzleRow, rowIdx, grid.maxLength, innerWidth, state)
-      GridClueRow(puzzleRow, grid.maxLength, innerWidth)
+  key(state.version) {
+    Column {
+      BorderTop("Puzzle Grid", totalWidth)
+      for ((rowIdx, puzzleRow) in grid.rows.withIndex()) {
+        GridCellRow(puzzleRow, rowIdx, grid.maxLength, innerWidth, state)
+        GridClueRow(puzzleRow, grid.maxLength, innerWidth)
+      }
+      val usedLines = grid.rows.size * 2 + 2
+      repeat(panelHeight - usedLines) { BLineEmpty(innerWidth) }
+      BLineEmpty(innerWidth)
+      GridAnswerRow(state, innerWidth)
+      BorderBottom(totalWidth)
     }
-    val usedLines = grid.rows.size * 2 + 2
-    repeat(panelHeight - usedLines) { BLineEmpty(innerWidth) }
-    BLineEmpty(innerWidth)
-    GridAnswerRow(state, innerWidth)
-    BorderBottom(totalWidth)
   }
 }
 

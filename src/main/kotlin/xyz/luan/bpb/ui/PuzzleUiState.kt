@@ -47,7 +47,6 @@ internal class PuzzleUiState(val grid: PuzzleGrid) {
     if (cursorCol in 0 until row.length) {
       grid.setCell(cursorRow, cursorCol, null)
       version++
-      retreatCursor()
     }
   }
 
@@ -90,15 +89,6 @@ internal class PuzzleUiState(val grid: PuzzleGrid) {
     } else if (cursorRow < grid.rows.size - 1) {
       cursorRow++
       cursorCol = 0
-    }
-  }
-
-  private fun retreatCursor() {
-    if (cursorCol > 0) {
-      cursorCol--
-    } else if (cursorRow > 0) {
-      cursorRow--
-      cursorCol = grid.rows[cursorRow].length - 1
     }
   }
 }

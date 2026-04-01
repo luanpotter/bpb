@@ -1,6 +1,7 @@
 package xyz.luan.bpb.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import com.jakewharton.mosaic.ui.Color
 import com.jakewharton.mosaic.ui.Column
 import com.jakewharton.mosaic.ui.Text
@@ -16,18 +17,19 @@ internal const val CANDIDATE_PANEL_TOTAL_WIDTH = CANDIDATE_INNER_WIDTH + BORDER_
 /** Renders the bordered candidate panel as a side box with selection. */
 @Composable
 internal fun CandidatePanel(state: PuzzleUiState, panelHeight: Int) {
-  @Suppress("UNUSED_EXPRESSION") state.version
   val rowIdx = state.candidateRow ?: return
   val puzzleRow = state.grid.rows[rowIdx]
   val totalWidth = CANDIDATE_INNER_WIDTH + BORDER_OVERHEAD
 
-  Column {
-    val title = "Candidates · Row ${rowIdx + 1}"
-    BorderTop(title, totalWidth)
-    CandidateInfo(puzzleRow)
-    CandidateItems(puzzleRow.candidates, state.candidateIdx, panelHeight)
-    CandidateHelp()
-    BorderBottom(totalWidth)
+  key(state.version) {
+    Column {
+      val title = "Candidates · Row ${rowIdx + 1}"
+      BorderTop(title, totalWidth)
+      CandidateInfo(puzzleRow)
+      CandidateItems(puzzleRow.candidates, state.candidateIdx, panelHeight)
+      CandidateHelp()
+      BorderBottom(totalWidth)
+    }
   }
 }
 
