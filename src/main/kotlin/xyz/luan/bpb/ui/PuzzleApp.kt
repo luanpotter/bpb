@@ -103,7 +103,7 @@ private fun sidebarOnly(fullInner: Int): PanelWidths =
 private fun handleKeyEvent(event: KeyEvent, state: PuzzleUiState): Boolean {
   if (event.ctrl || event.alt) return false
   return if (state.candidateRow != null) {
-    handleCandidateKeys(event.key, state)
+    handleCandidateKeys(event, state)
   } else {
     handleGridKeys(event.key, state)
   }
@@ -132,18 +132,10 @@ private fun handleLetterInput(key: String, state: PuzzleUiState): Boolean {
   return false
 }
 
-private fun handleCandidateKeys(key: String, state: PuzzleUiState): Boolean {
-  // Shared keys across both modes
-  when (key) {
-    "ArrowUp" -> {
-      state.moveCandidateCursor(-1)
-      return true
-    }
-    "ArrowDown" -> {
-      state.moveCandidateCursor(1)
-      return true
-    }
-  }
+private fun handleCandidateKeys(event: KeyEvent, state: PuzzleUiState): Boolean {
+  val key = event.key
+  if (consumeVimListNavigation(key, state)) return true
+  if (consumeArrowListNavigation(key, state)) return true
 
   return when (state.candidatePanelMode) {
     CandidatePanelMode.CANDIDATES -> handleCandidateListKeys(key, state)
@@ -151,9 +143,46 @@ private fun handleCandidateKeys(key: String, state: PuzzleUiState): Boolean {
   }
 }
 
+private fun consumeVimListNavigation(key: String, state: PuzzleUiState): Boolean {
+  if (key == "G") {
+    state.clearSideKeyBuffer()
+    state.moveCandidateCursor(Int.MAX_VALUE)
+    return true
+  }
+
+  if (key == "g") {
+    state.pushSideKey("g")
+    if (state.sideKeyBuffer == "gg") {
+      state.clearSideKeyBuffer()
+      state.moveCandidateCursor(Int.MIN_VALUE)
+    }
+    return true
+  }
+
+  state.clearSideKeyBuffer()
+  return false
+}
+
+private fun consumeArrowListNavigation(key: String, state: PuzzleUiState): Boolean =
+    when (key) {
+      "ArrowUp" -> {
+        state.clearSideKeyBuffer()
+        state.moveCandidateCursor(-1)
+        true
+      }
+      "ArrowDown" -> {
+        state.clearSideKeyBuffer()
+        state.moveCandidateCursor(1)
+        true
+      }
+      else -> false
+    }
+
 private fun handleCandidateListKeys(key: String, state: PuzzleUiState): Boolean {
+  state.clearSideKeyBuffer()
   when (key) {
-    "Enter" -> state.selectCandidate()
+    "Enter",
+    " " -> state.selectCandidate()
     "Escape",
     "Tab" -> state.dismissCandidates()
     "x",
@@ -167,11 +196,14 @@ private fun handleCandidateListKeys(key: String, state: PuzzleUiState): Boolean 
 }
 
 private fun handleShortWordKeys(key: String, state: PuzzleUiState): Boolean {
+  state.clearSideKeyBuffer()
   when (key) {
     "Enter",
+    " " -> state.applySelectedShortWord()
     "x" -> state.excludeOrToggleCurrent()
-    "Escape",
+    "Tab",
     "s" -> state.switchPanelMode()
+    "Escape" -> state.switchPanelMode()
     "r" -> state.resetExclusions()
     else -> return false
   }

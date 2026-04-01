@@ -44,13 +44,18 @@ internal class PuzzleRow(val entry: PuzzleEntry) {
             .filter { it.small !in excludedSmallWords && it.long !in excludedLongWords }
   }
 
-  /** Returns sorted unique small words with excluded status (included first). */
+  /** Returns unique short words sorted by candidate count (descending), then alphabetically. */
   fun uniqueSmallWords(): List<SmallWordEntry> {
-    val fromCandidates = candidates.map { it.small }.toSet()
-    val all = (fromCandidates + excludedSmallWords).sorted()
-    val included = all.filter { it !in excludedSmallWords }
-    val excluded = all.filter { it in excludedSmallWords }
-    return included.map { SmallWordEntry(it, false) } + excluded.map { SmallWordEntry(it, true) }
+    val counts = candidates.groupingBy { it.small }.eachCount()
+    val all = (counts.keys + excludedSmallWords).toSet()
+    return all.sortedWith(compareByDescending<String> { counts[it] ?: 0 }.thenBy { it }).map { word
+      ->
+      SmallWordEntry(
+          word = word,
+          excluded = word in excludedSmallWords,
+          count = counts[word] ?: 0,
+      )
+    }
   }
 
   fun clearExclusions() {
@@ -78,5 +83,5 @@ internal class PuzzleRow(val entry: PuzzleEntry) {
 
   data class Candidate(val long: String, val small: String)
 
-  data class SmallWordEntry(val word: String, val excluded: Boolean)
+  data class SmallWordEntry(val word: String, val excluded: Boolean, val count: Int)
 }

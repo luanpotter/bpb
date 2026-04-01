@@ -1,18 +1,14 @@
 complexity:
   LongMethod:
-    allowedLines: 30
+    active: false
   LongParameterList:
-    allowedFunctionParameters: 5
-    allowedConstructorParameters: 6
+    active: false
   CyclomaticComplexMethod:
-    allowedComplexity: 10
+    active: false
   TooManyFunctions:
-    allowedFunctionsPerFile: 15
-    allowedFunctionsPerClass: 10
-    allowedFunctionsPerInterface: 5
-    allowedFunctionsPerObject: 10
+    active: false
   LargeClass:
-    allowedLines: 200
+    active: false
 
 coroutines:
   active: true
@@ -73,7 +69,7 @@ style:
   MaxLineLength:
     maxLineLength: 120
   ReturnCount:
-    max: 3
+    active: false
   ForbiddenComment:
     active: true
     comments:

@@ -11,10 +11,16 @@ import xyz.luan.bpb.puzzle.PuzzleRow
 private const val CELL_WIDTH = 3
 private const val ROW_NUM_WIDTH = 5
 private const val COUNT_SUFFIX_WIDTH = 10
+private const val HINT_SPACER_WIDTH = 3
+private const val HINT_RESERVED_WIDTH = 96
 
 /** Computes the inner content width for the grid panel. */
 internal fun gridInnerWidth(maxLength: Int): Int =
-    ROW_NUM_WIDTH + maxLength * CELL_WIDTH + COUNT_SUFFIX_WIDTH
+    ROW_NUM_WIDTH +
+        maxLength * CELL_WIDTH +
+        COUNT_SUFFIX_WIDTH +
+        HINT_SPACER_WIDTH +
+        HINT_RESERVED_WIDTH
 
 /** Renders the bordered grid panel. */
 @Composable
@@ -27,9 +33,8 @@ internal fun GridPanel(state: PuzzleUiState, innerWidth: Int, panelHeight: Int) 
       BorderTop("Puzzle Grid", totalWidth)
       for ((rowIdx, puzzleRow) in grid.rows.withIndex()) {
         GridCellRow(puzzleRow, rowIdx, grid.maxLength, innerWidth, state)
-        GridClueRow(puzzleRow, grid.maxLength, innerWidth)
       }
-      val usedLines = grid.rows.size * 2 + 2
+      val usedLines = grid.rows.size + 2
       repeat(panelHeight - usedLines) { BLineEmpty(innerWidth) }
       BLineEmpty(innerWidth)
       GridAnswerRow(state, innerWidth)
@@ -46,14 +51,18 @@ private fun GridCellRow(
     innerWidth: Int,
     state: PuzzleUiState,
 ) {
+  val isSelectedRow = rowIdx == state.cursorRow
   BLine(innerWidth) {
     val offset = maxLength - row.length
     val pad = " ".repeat(offset * CELL_WIDTH)
+    val rowLabel = "${(rowIdx + 1).toString().padStart(2)}. "
     Text(
-        "${(rowIdx + 1).toString().padStart(2)}. $pad",
-        color = Color.White,
-        textStyle = TextStyle.Dim,
+        rowLabel,
+        color = if (isSelectedRow) Color.Cyan else Color.White,
+        textStyle = if (isSelectedRow) TextStyle.Bold else TextStyle.Dim,
     )
+    Text(pad, color = Color.White, textStyle = TextStyle.Dim)
+
     for (colIdx in 0 until row.length) {
       CellView(
           row.cells[colIdx],
@@ -61,16 +70,18 @@ private fun GridCellRow(
           rowIdx == state.cursorRow && colIdx == state.cursorCol,
       )
     }
+
     val countStr = row.candidates.size.toString().padStart(COUNT_SUFFIX_WIDTH - CELL_WIDTH)
     Text(" │$countStr", color = Color.White, textStyle = TextStyle.Dim)
-  }
-}
 
-@Composable
-private fun GridClueRow(row: PuzzleRow, maxLength: Int, innerWidth: Int) {
-  val offset = maxLength - row.length
-  val prefix = " ".repeat(ROW_NUM_WIDTH + offset * CELL_WIDTH)
-  BLineText("$prefix${row.entry.name}", innerWidth, color = Color.White, textStyle = TextStyle.Dim)
+    val clue = row.entry.name.padEnd(HINT_RESERVED_WIDTH)
+    Text(" │ ", color = Color.White, textStyle = TextStyle.Dim)
+    Text(
+        clue,
+        color = if (isSelectedRow) Color.Cyan else Color.White,
+        textStyle = if (isSelectedRow) TextStyle.Bold else TextStyle.Dim,
+    )
+  }
 }
 
 @Composable

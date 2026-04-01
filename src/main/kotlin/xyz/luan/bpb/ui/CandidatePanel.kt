@@ -46,6 +46,7 @@ private fun CandidatePanelContent(
             panelHeight,
             totalWidth,
             innerWidth,
+            state.candidateSmallFilter,
         )
     CandidatePanelMode.SHORT_WORDS ->
         ShortWordFilterView(
@@ -69,30 +70,39 @@ private fun CandidateListView(
     panelHeight: Int,
     totalWidth: Int,
     innerWidth: Int,
+    smallFilter: String?,
 ) {
-  val title = "Candidates · Row ${rowIdx + 1}"
+  val title =
+    if (smallFilter == null) "Candidates · Row ${rowIdx + 1}" else "Candidates · ${smallFilter}"
+  val visibleCandidates =
+    if (smallFilter == null) puzzleRow.candidates
+    else puzzleRow.candidates.filter { it.small == smallFilter }
   BorderTop(title, totalWidth)
-  CandidateInfo(puzzleRow, innerWidth)
-  CandidateItems(puzzleRow.candidates, selectedIdx, panelHeight, innerWidth)
+  CandidateInfo(puzzleRow, innerWidth, visibleCandidates.size, smallFilter)
+  CandidateItems(visibleCandidates, selectedIdx, panelHeight, innerWidth)
   CandidateListHelp(innerWidth)
   BorderBottom(totalWidth)
 }
 
 @Composable
-private fun CandidateInfo(puzzleRow: PuzzleRow, innerWidth: Int) {
+private fun CandidateInfo(
+    puzzleRow: PuzzleRow,
+    innerWidth: Int,
+    visibleCount: Int,
+    smallFilter: String?,
+) {
   BLineText(
-      "${puzzleRow.entry.pattern}  ${puzzleRow.getLongWord()}",
-      innerWidth,
-      color = Color.White,
-      textStyle = TextStyle.Dim,
+    "${puzzleRow.entry.pattern}  ${puzzleRow.getLongWord()}",
+    innerWidth,
+    color = Color.White,
+    textStyle = TextStyle.Dim,
   )
   val exCount = puzzleRow.excludedLongWords.size + puzzleRow.excludedSmallWords.size
   val exSuffix = if (exCount > 0) "  ($exCount excluded)" else ""
-  BLineText(
-      "${puzzleRow.candidates.size} candidates$exSuffix",
-      innerWidth,
-      color = Color.Cyan,
-  )
+  val label =
+    if (smallFilter == null) "$visibleCount candidates$exSuffix"
+    else "$visibleCount for '$smallFilter'$exSuffix"
+  BLineText(label, innerWidth, color = Color.Cyan)
   BLineEmpty(innerWidth)
 }
 
@@ -121,7 +131,7 @@ private fun CandidateItems(
 private fun CandidateListHelp(innerWidth: Int) {
   BLineEmpty(innerWidth)
   BLine(innerWidth) {
-    Text("Enter", color = Color.Cyan, textStyle = TextStyle.Bold)
+    Text("Enter/Sp", color = Color.Cyan, textStyle = TextStyle.Bold)
     Text(" apply ", color = Color.White, textStyle = TextStyle.Dim)
     Text("x", color = Color.Cyan, textStyle = TextStyle.Bold)
     Text(" exclude ", color = Color.White, textStyle = TextStyle.Dim)
@@ -129,8 +139,10 @@ private fun CandidateListHelp(innerWidth: Int) {
     Text(" short words", color = Color.White, textStyle = TextStyle.Dim)
   }
   BLine(innerWidth) {
+    Text("gg/G", color = Color.Cyan, textStyle = TextStyle.Bold)
+    Text(" jump  ", color = Color.White, textStyle = TextStyle.Dim)
     Text("r", color = Color.Cyan, textStyle = TextStyle.Bold)
-    Text(" reset ", color = Color.White, textStyle = TextStyle.Dim)
+    Text(" reset  ", color = Color.White, textStyle = TextStyle.Dim)
     Text("Esc", color = Color.Cyan, textStyle = TextStyle.Bold)
     Text(" close", color = Color.White, textStyle = TextStyle.Dim)
   }
@@ -151,9 +163,9 @@ private fun ShortWordFilterView(
   BorderTop(title, totalWidth)
   val entries = puzzleRow.uniqueSmallWords()
   BLineText(
-      "${entries.count { !it.excluded }} active / ${entries.size} total",
-      innerWidth,
-      color = Color.Cyan,
+    "${entries.count { !it.excluded }} active / ${entries.size} total",
+    innerWidth,
+    color = Color.Cyan,
   )
   BLineEmpty(innerWidth)
   ShortWordItems(entries, selectedIdx, panelHeight, innerWidth)
@@ -175,7 +187,7 @@ private fun ShortWordItems(
     val e = entries[i]
     val marker = if (i == selectedIdx) "▸ " else "  "
     val status = if (e.excluded) "✗ " else "✓ "
-    val text = "$marker$status${e.word}"
+    val text = "$marker$status${e.word} (${e.count})"
     BLineText(
         text,
         innerWidth,
@@ -188,26 +200,32 @@ private fun ShortWordItems(
 
 private fun shortWordColor(selected: Boolean, excluded: Boolean): Color =
     when {
-      excluded -> Color.Red
-      selected -> Color.Cyan
-      else -> Color.White
+    excluded -> Color.Red
+    selected -> Color.Cyan
+    else -> Color.White
     }
 
 private fun shortWordStyle(selected: Boolean, excluded: Boolean): TextStyle =
     when {
-      excluded -> TextStyle.Dim
-      selected -> TextStyle.Bold
-      else -> TextStyle.Unspecified
+    excluded -> TextStyle.Dim
+    selected -> TextStyle.Bold
+    else -> TextStyle.Unspecified
     }
 
 @Composable
 private fun ShortWordHelp(innerWidth: Int) {
   BLineEmpty(innerWidth)
   BLine(innerWidth) {
-    Text("Enter", color = Color.Cyan, textStyle = TextStyle.Bold)
-    Text(" toggle ", color = Color.White, textStyle = TextStyle.Dim)
-    Text("r", color = Color.Cyan, textStyle = TextStyle.Bold)
-    Text(" reset ", color = Color.White, textStyle = TextStyle.Dim)
+    Text("Enter/Sp", color = Color.Cyan, textStyle = TextStyle.Bold)
+    Text(" apply+view ", color = Color.White, textStyle = TextStyle.Dim)
+    Text("x", color = Color.Cyan, textStyle = TextStyle.Bold)
+    Text(" exclude", color = Color.White, textStyle = TextStyle.Dim)
+  }
+  BLine(innerWidth) {
+    Text("gg/G", color = Color.Cyan, textStyle = TextStyle.Bold)
+    Text(" jump  ", color = Color.White, textStyle = TextStyle.Dim)
+    Text("Tab", color = Color.Cyan, textStyle = TextStyle.Bold)
+    Text(" view longs  ", color = Color.White, textStyle = TextStyle.Dim)
     Text("Esc/s", color = Color.Cyan, textStyle = TextStyle.Bold)
     Text(" back", color = Color.White, textStyle = TextStyle.Dim)
   }
@@ -230,7 +248,7 @@ private fun computeVisibleWindow(total: Int, selected: Int, windowSize: Int): In
 private const val CANDIDATE_CHROME_LINES = 6
 
 /**
- * Chrome lines in short word view: info (2) + help (2) = 4. listHeight = panelHeight - 4 so inner
- * total = 2 + listHeight + 2 = panelHeight.
+ * Chrome lines in short word view: info (2) + help (3) = 5. listHeight = panelHeight - 5 so inner
+ * total = 2 + listHeight + 3 = panelHeight.
  */
-private const val SHORT_WORD_CHROME_LINES = 4
+private const val SHORT_WORD_CHROME_LINES = 5
