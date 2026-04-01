@@ -17,6 +17,13 @@ private const val BORDER_OVERHEAD = 4
 private const val HELP_BAR_HEIGHT = 3
 private const val PANEL_BORDER_HEIGHT = 2
 
+private data class PanelWidths(
+    val gridInner: Int,
+    val candidateInner: Int,
+    val showGrid: Boolean,
+    val showCandidate: Boolean,
+)
+
 /** Top-level composable for the puzzle application. */
 @Composable
 internal fun PuzzleApp(state: PuzzleUiState) {
@@ -24,16 +31,13 @@ internal fun PuzzleApp(state: PuzzleUiState) {
 
   val termSize = LocalTerminalState.current.size
   val termCols = termSize.columns
-  // Mosaic's AnsiRendering appends \r\n after every row including the last one.
-  // When content height == terminal rows, the trailing \r\n scrolls the viewport
+  // Mosaic's AnsiRendering appends \r\n after every row, including the last one.
+  // When content height == terminal rows, the trailing \r\n scrolls the viewport,
   // and the first line is lost. Use rows-1 to prevent that scroll.
   val termRows = termSize.rows - 1
 
   val candidateShown = state.candidateRow != null
-  val candidateTotalWidth = CANDIDATE_PANEL_TOTAL_WIDTH
-  val gridTotalWidth = if (candidateShown) termCols - candidateTotalWidth else termCols
-  val gridInner =
-      (gridTotalWidth - BORDER_OVERHEAD).coerceAtLeast(gridInnerWidth(state.grid.maxLength))
+  val widths = computePanelWidths(termCols, state.grid.maxLength, candidateShown)
   val panelHeight =
       (termRows - HELP_BAR_HEIGHT - PANEL_BORDER_HEIGHT).coerceAtLeast(state.grid.rows.size * 2 + 2)
 
@@ -42,8 +46,12 @@ internal fun PuzzleApp(state: PuzzleUiState) {
           Modifier.size(termCols, termRows).onKeyEvent { event -> handleKeyEvent(event, state) },
   ) {
     Row(modifier = Modifier.height(panelHeight + PANEL_BORDER_HEIGHT)) {
-      GridPanel(state, gridInner, panelHeight)
-      CandidatePanel(state, panelHeight)
+      if (widths.showGrid) {
+        GridPanel(state, widths.gridInner, panelHeight)
+      }
+      if (widths.showCandidate) {
+        CandidatePanel(state, panelHeight, widths.candidateInner)
+      }
     }
     HelpBar(termCols)
     Spacer(
@@ -53,6 +61,44 @@ internal fun PuzzleApp(state: PuzzleUiState) {
     )
   }
 }
+
+private fun computePanelWidths(
+    termCols: Int,
+    maxLength: Int,
+    candidateShown: Boolean,
+): PanelWidths {
+  val minGridInner = 1
+  val fullInner = (termCols - BORDER_OVERHEAD).coerceAtLeast(minGridInner)
+  if (!candidateShown) return gridOnly(fullInner)
+
+  val naturalGridInner = gridInnerWidth(maxLength)
+  val splitAvailableInner = (termCols - BORDER_OVERHEAD * 2).coerceAtLeast(0)
+
+  // If there is enough room for a healthy split, keep grid natural and use a wider sidebar.
+  if (splitAvailableInner >= naturalGridInner + MIN_CANDIDATE_INNER_WIDTH) {
+    val sidebar =
+        (splitAvailableInner - naturalGridInner).coerceAtMost(CANDIDATE_PREFERRED_INNER_WIDTH)
+    val grid = (splitAvailableInner - sidebar).coerceAtLeast(minGridInner)
+    return splitView(grid, sidebar)
+  }
+
+  // Narrow terminal fallback: show candidate panel full-width instead of creating a broken split.
+  return sidebarOnly(fullInner)
+}
+
+private fun gridOnly(fullInner: Int): PanelWidths =
+    PanelWidths(gridInner = fullInner, candidateInner = 0, showGrid = true, showCandidate = false)
+
+private fun splitView(gridInner: Int, candidateInner: Int): PanelWidths =
+    PanelWidths(
+        gridInner = gridInner,
+        candidateInner = candidateInner,
+        showGrid = true,
+        showCandidate = true,
+    )
+
+private fun sidebarOnly(fullInner: Int): PanelWidths =
+    PanelWidths(gridInner = 0, candidateInner = fullInner, showGrid = false, showCandidate = true)
 
 private fun handleKeyEvent(event: KeyEvent, state: PuzzleUiState): Boolean {
   if (event.ctrl || event.alt) return false
@@ -87,12 +133,46 @@ private fun handleLetterInput(key: String, state: PuzzleUiState): Boolean {
 }
 
 private fun handleCandidateKeys(key: String, state: PuzzleUiState): Boolean {
+  // Shared keys across both modes
   when (key) {
-    "ArrowUp" -> state.moveCandidateCursor(-1)
-    "ArrowDown" -> state.moveCandidateCursor(1)
+    "ArrowUp" -> {
+      state.moveCandidateCursor(-1)
+      return true
+    }
+    "ArrowDown" -> {
+      state.moveCandidateCursor(1)
+      return true
+    }
+  }
+
+  return when (state.candidatePanelMode) {
+    CandidatePanelMode.CANDIDATES -> handleCandidateListKeys(key, state)
+    CandidatePanelMode.SHORT_WORDS -> handleShortWordKeys(key, state)
+  }
+}
+
+private fun handleCandidateListKeys(key: String, state: PuzzleUiState): Boolean {
+  when (key) {
     "Enter" -> state.selectCandidate()
     "Escape",
     "Tab" -> state.dismissCandidates()
+    "x",
+    "Delete",
+    "Backspace" -> state.excludeOrToggleCurrent()
+    "s" -> state.switchPanelMode()
+    "r" -> state.resetExclusions()
+    else -> return false
+  }
+  return true
+}
+
+private fun handleShortWordKeys(key: String, state: PuzzleUiState): Boolean {
+  when (key) {
+    "Enter",
+    "x" -> state.excludeOrToggleCurrent()
+    "Escape",
+    "s" -> state.switchPanelMode()
+    "r" -> state.resetExclusions()
     else -> return false
   }
   return true

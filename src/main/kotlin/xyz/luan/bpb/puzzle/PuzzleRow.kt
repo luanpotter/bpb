@@ -16,6 +16,12 @@ internal class PuzzleRow(val entry: PuzzleEntry) {
   var candidates: List<Candidate> = emptyList()
     private set
 
+  /** Excluded small words — all candidates producing these are filtered out. */
+  val excludedSmallWords: MutableSet<String> = mutableSetOf()
+
+  /** Individually excluded candidates (by long word). */
+  val excludedLongWords: MutableSet<String> = mutableSetOf()
+
   fun setCell(index: Int, letter: Char?) {
     cells[index] = letter?.uppercaseChar()
   }
@@ -29,10 +35,27 @@ internal class PuzzleRow(val entry: PuzzleEntry) {
     val longMatches = allWords.filter { word ->
       word.length == length && cells.withIndex().all { (i, ch) -> ch == null || word[i] == ch }
     }
-    candidates = longMatches.mapNotNull { long ->
-      val small = smallIndices.map { long[it] }.joinToString("")
-      if (small in smallWords) Candidate(long, small) else null
-    }
+    candidates =
+        longMatches
+            .mapNotNull { long ->
+              val small = smallIndices.map { long[it] }.joinToString("")
+              if (small in smallWords) Candidate(long, small) else null
+            }
+            .filter { it.small !in excludedSmallWords && it.long !in excludedLongWords }
+  }
+
+  /** Returns sorted unique small words with excluded status (included first). */
+  fun uniqueSmallWords(): List<SmallWordEntry> {
+    val fromCandidates = candidates.map { it.small }.toSet()
+    val all = (fromCandidates + excludedSmallWords).sorted()
+    val included = all.filter { it !in excludedSmallWords }
+    val excluded = all.filter { it in excludedSmallWords }
+    return included.map { SmallWordEntry(it, false) } + excluded.map { SmallWordEntry(it, true) }
+  }
+
+  fun clearExclusions() {
+    excludedSmallWords.clear()
+    excludedLongWords.clear()
   }
 
   /** Prune candidates whose small word letters don't all appear in any next-row long word. */
@@ -54,4 +77,6 @@ internal class PuzzleRow(val entry: PuzzleEntry) {
   }
 
   data class Candidate(val long: String, val small: String)
+
+  data class SmallWordEntry(val word: String, val excluded: Boolean)
 }
