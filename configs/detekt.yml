@@ -43,6 +43,7 @@ naming:
   FunctionNaming:
     ignoreAnnotated:
       - Test
+      - Composable
 
 performance:
   active: true
