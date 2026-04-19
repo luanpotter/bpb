@@ -73,10 +73,10 @@ private fun CandidateListView(
     smallFilter: String?,
 ) {
   val title =
-    if (smallFilter == null) "Candidates · Row ${rowIdx + 1}" else "Candidates · ${smallFilter}"
+      if (smallFilter == null) "Candidates · Row ${rowIdx + 1}" else "Candidates · ${smallFilter}"
   val visibleCandidates =
-    if (smallFilter == null) puzzleRow.candidates
-    else puzzleRow.candidates.filter { it.small == smallFilter }
+      if (smallFilter == null) puzzleRow.candidates
+      else puzzleRow.candidates.filter { it.small == smallFilter }
   BorderTop(title, totalWidth)
   CandidateInfo(puzzleRow, innerWidth, visibleCandidates.size, smallFilter)
   CandidateItems(visibleCandidates, selectedIdx, panelHeight, innerWidth)
@@ -92,16 +92,16 @@ private fun CandidateInfo(
     smallFilter: String?,
 ) {
   BLineText(
-    "${puzzleRow.entry.pattern}  ${puzzleRow.getLongWord()}",
-    innerWidth,
-    color = Color.White,
-    textStyle = TextStyle.Dim,
+      "${puzzleRow.entry.pattern}  ${puzzleRow.getLongWord()}",
+      innerWidth,
+      color = Color.White,
+      textStyle = TextStyle.Dim,
   )
   val exCount = puzzleRow.excludedLongWords.size + puzzleRow.excludedSmallWords.size
   val exSuffix = if (exCount > 0) "  ($exCount excluded)" else ""
   val label =
-    if (smallFilter == null) "$visibleCount candidates$exSuffix"
-    else "$visibleCount for '$smallFilter'$exSuffix"
+      if (smallFilter == null) "$visibleCount candidates$exSuffix"
+      else "$visibleCount for '$smallFilter'$exSuffix"
   BLineText(label, innerWidth, color = Color.Cyan)
   BLineEmpty(innerWidth)
 }
@@ -163,9 +163,9 @@ private fun ShortWordFilterView(
   BorderTop(title, totalWidth)
   val entries = puzzleRow.uniqueSmallWords()
   BLineText(
-    "${entries.count { !it.excluded }} active / ${entries.size} total",
-    innerWidth,
-    color = Color.Cyan,
+      "${entries.count { !it.excluded }} active / ${entries.size} total",
+      innerWidth,
+      color = Color.Cyan,
   )
   BLineEmpty(innerWidth)
   ShortWordItems(entries, selectedIdx, panelHeight, innerWidth)
@@ -200,16 +200,16 @@ private fun ShortWordItems(
 
 private fun shortWordColor(selected: Boolean, excluded: Boolean): Color =
     when {
-    excluded -> Color.Red
-    selected -> Color.Cyan
-    else -> Color.White
+      excluded -> Color.Red
+      selected -> Color.Cyan
+      else -> Color.White
     }
 
 private fun shortWordStyle(selected: Boolean, excluded: Boolean): TextStyle =
     when {
-    excluded -> TextStyle.Dim
-    selected -> TextStyle.Bold
-    else -> TextStyle.Unspecified
+      excluded -> TextStyle.Dim
+      selected -> TextStyle.Bold
+      else -> TextStyle.Unspecified
     }
 
 @Composable

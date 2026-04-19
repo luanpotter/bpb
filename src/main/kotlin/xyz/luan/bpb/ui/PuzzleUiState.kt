@@ -5,11 +5,14 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import xyz.luan.bpb.puzzle.PuzzleGrid
+import xyz.luan.bpb.wordnik.WordnikClient
 
 internal enum class CandidatePanelMode {
   CANDIDATES,
   SHORT_WORDS,
 }
+
+private data class DefinitionTarget(val label: String, val word: String)
 
 /** Observable UI state wrapping a [PuzzleGrid] for Compose recomposition. */
 internal class PuzzleUiState(val grid: PuzzleGrid) {
@@ -46,6 +49,18 @@ internal class PuzzleUiState(val grid: PuzzleGrid) {
   /** Last side-panel keys for vim-like sequences such as gg. */
   var sideKeyBuffer by mutableStateOf("")
     private set
+
+  /** Bottom dictionary drawer visibility/content. */
+  var definitionDrawerOpen by mutableStateOf(false)
+    private set
+
+  var definitionDrawerError by mutableStateOf(false)
+    private set
+
+  var definitionDrawerText by mutableStateOf("Press Ctrl+E to load a definition.")
+    private set
+
+  private var definitionDrawerTargetKey: String? = null
 
   fun moveCursor(dr: Int, dc: Int) {
     val newRow = (cursorRow + dr).coerceIn(grid.rows.indices)
@@ -219,5 +234,69 @@ internal class PuzzleUiState(val grid: PuzzleGrid) {
     shortWordIdx = 0
     candidateSmallFilter = null
     sideKeyBuffer = ""
+  }
+
+  fun toggleDefinitionDrawer(client: WordnikClient) {
+    val targets = resolveDefinitionTargets()
+    val targetKey = targets.joinToString("|") { "${it.label}:${it.word}" }
+
+    if (definitionDrawerOpen && definitionDrawerTargetKey == targetKey) {
+      closeDefinitionDrawer()
+      return
+    }
+
+    definitionDrawerOpen = true
+    definitionDrawerTargetKey = targetKey
+
+    if (targets.isEmpty()) {
+      definitionDrawerError = true
+      definitionDrawerText =
+          "No selection available. Open candidates with Tab and select a candidate or short word."
+      return
+    }
+
+    val lines = mutableListOf<String>()
+    var hasError = false
+    for (target in targets) {
+      when (val result = client.define(target.word)) {
+        is WordnikClient.LookupResult.Success -> {
+          lines += "${target.label} (${target.word}): ${result.definition}"
+        }
+        is WordnikClient.LookupResult.Error -> {
+          hasError = true
+          lines += "${target.label} (${target.word}): ${result.message}"
+        }
+      }
+    }
+
+    definitionDrawerError = hasError
+    definitionDrawerText = lines.joinToString("\n")
+  }
+
+  fun closeDefinitionDrawer() {
+    definitionDrawerOpen = false
+    definitionDrawerTargetKey = null
+  }
+
+  private fun resolveDefinitionTargets(): List<DefinitionTarget> {
+    val rowIdx = candidateRow ?: return emptyList()
+    val row = grid.rows[rowIdx]
+
+    return when (candidatePanelMode) {
+      CandidatePanelMode.CANDIDATES -> {
+        val visible =
+            if (candidateSmallFilter == null) row.candidates
+            else row.candidates.filter { it.small == candidateSmallFilter }
+        val selected = visible.getOrNull(candidateIdx) ?: return emptyList()
+        listOf(
+            DefinitionTarget("Long", selected.long),
+            DefinitionTarget("Short", selected.small),
+        )
+      }
+      CandidatePanelMode.SHORT_WORDS -> {
+        val selected = row.uniqueSmallWords().getOrNull(shortWordIdx) ?: return emptyList()
+        listOf(DefinitionTarget("Short", selected.word))
+      }
+    }
   }
 }

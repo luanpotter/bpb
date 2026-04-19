@@ -21,6 +21,8 @@ internal fun HelpBar(totalWidth: Int) {
       Text(" clear  ", color = Color.White, textStyle = TextStyle.Dim)
       Text("Tab", color = Color.Cyan, textStyle = TextStyle.Bold)
       Text(" candidates  ", color = Color.White, textStyle = TextStyle.Dim)
+      Text("Ctrl-E", color = Color.Cyan, textStyle = TextStyle.Bold)
+      Text(" dict  ", color = Color.White, textStyle = TextStyle.Dim)
       Text("Ctrl-C", color = Color.Cyan, textStyle = TextStyle.Bold)
       Text(" quit", color = Color.White, textStyle = TextStyle.Dim)
     }

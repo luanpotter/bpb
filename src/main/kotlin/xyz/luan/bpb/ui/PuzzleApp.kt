@@ -2,6 +2,7 @@ package xyz.luan.bpb.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import com.jakewharton.mosaic.LocalTerminalState
 import com.jakewharton.mosaic.layout.KeyEvent
 import com.jakewharton.mosaic.layout.height
@@ -12,6 +13,7 @@ import com.jakewharton.mosaic.ui.Column
 import com.jakewharton.mosaic.ui.Row
 import com.jakewharton.mosaic.ui.Spacer
 import kotlinx.coroutines.awaitCancellation
+import xyz.luan.bpb.wordnik.WordnikClient
 
 private const val BORDER_OVERHEAD = 4
 private const val HELP_BAR_HEIGHT = 3
@@ -28,6 +30,7 @@ private data class PanelWidths(
 @Composable
 internal fun PuzzleApp(state: PuzzleUiState) {
   LaunchedEffect(Unit) { awaitCancellation() }
+  val wordnikClient = remember { WordnikClient() }
 
   val termSize = LocalTerminalState.current.size
   val termCols = termSize.columns
@@ -38,12 +41,17 @@ internal fun PuzzleApp(state: PuzzleUiState) {
 
   val candidateShown = state.candidateRow != null
   val widths = computePanelWidths(termCols, state.grid.maxLength, candidateShown)
+  val drawerHeight = if (state.definitionDrawerOpen) DEFINITION_DRAWER_TOTAL_HEIGHT else 0
   val panelHeight =
-      (termRows - HELP_BAR_HEIGHT - PANEL_BORDER_HEIGHT).coerceAtLeast(state.grid.rows.size * 2 + 2)
+      (termRows - HELP_BAR_HEIGHT - PANEL_BORDER_HEIGHT - drawerHeight).coerceAtLeast(
+          state.grid.rows.size + 2
+      )
 
   Column(
       modifier =
-          Modifier.size(termCols, termRows).onKeyEvent { event -> handleKeyEvent(event, state) },
+          Modifier.size(termCols, termRows).onKeyEvent { event ->
+            handleKeyEvent(event, state, wordnikClient)
+          },
   ) {
     Row(modifier = Modifier.height(panelHeight + PANEL_BORDER_HEIGHT)) {
       if (widths.showGrid) {
@@ -54,9 +62,13 @@ internal fun PuzzleApp(state: PuzzleUiState) {
       }
     }
     HelpBar(termCols)
+    if (state.definitionDrawerOpen) {
+      DefinitionDrawer(termCols, state.definitionDrawerText, state.definitionDrawerError)
+    }
     Spacer(
         Modifier.height(
-            (termRows - panelHeight - PANEL_BORDER_HEIGHT - HELP_BAR_HEIGHT).coerceAtLeast(0)
+            (termRows - panelHeight - PANEL_BORDER_HEIGHT - HELP_BAR_HEIGHT - drawerHeight)
+                .coerceAtLeast(0)
         )
     )
   }
@@ -100,7 +112,22 @@ private fun splitView(gridInner: Int, candidateInner: Int): PanelWidths =
 private fun sidebarOnly(fullInner: Int): PanelWidths =
     PanelWidths(gridInner = 0, candidateInner = fullInner, showGrid = false, showCandidate = true)
 
-private fun handleKeyEvent(event: KeyEvent, state: PuzzleUiState): Boolean {
+private fun handleKeyEvent(
+    event: KeyEvent,
+    state: PuzzleUiState,
+    wordnikClient: WordnikClient,
+): Boolean {
+  val isCtrlE = event.ctrl && !event.alt && event.key.equals("e", ignoreCase = true)
+  if (isCtrlE) {
+    state.toggleDefinitionDrawer(wordnikClient)
+    return true
+  }
+
+  // Any other regular key press can dismiss the drawer while preserving normal key handling.
+  if (state.definitionDrawerOpen && !event.ctrl && !event.alt) {
+    state.closeDefinitionDrawer()
+  }
+
   if (event.ctrl || event.alt) return false
   return if (state.candidateRow != null) {
     handleCandidateKeys(event, state)
